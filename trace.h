@@ -11,9 +11,15 @@
 
 
 #define MAC_BYTES 6
+
+/* These lengths have extra padding */
 #define MAC_STR_LEN 20
+#define IP_STR_LEN 20
+
 #define ARP_TAG 0x0608
-#define ETH_OFFSET sizeof(struct eth_frame)
+#define ARP_REQUEST 0x0001
+#define ARP_REPLY 0x0002
+#define ETH_LEN sizeof(struct eth_frame)
 
 /* Fields are populated by reading raw frame data */
 struct eth_frame{
@@ -23,7 +29,7 @@ struct eth_frame{
 } __attribute__((packed));
 
 
-struct arp_frame{
+struct arp_header{
    uint16_t htype;
    uint16_t ptype;
    uint8_t hsize;
