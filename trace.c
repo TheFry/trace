@@ -6,9 +6,9 @@ static struct pcap_pkthdr *hdr;
 static const u_char *data;
 
 void read_packets();
-void parse_ether();
-
-
+uint16_t parse_ether();
+void parse_arp();
+void get_mac_str(uint8_t *, char *);
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
    char errbuf[PCAP_ERRBUF_SIZE];
@@ -31,6 +31,7 @@ void read_packets(){
    /* Error check and interator */
    int retval = 0;
    int i = 1;
+   uint16_t payload_t;
 
    /* Get packet */
    retval = pcap_next_ex(file, &hdr, &data);
@@ -38,7 +39,11 @@ void read_packets(){
    /* While there are still packets, read */
    while(retval == 1){
       printf("Packet number: %d  Frame Len: %d\n\n", i, hdr->caplen);
-      parse_ether();
+      payload_t = parse_ether();
+
+      /* Determine and retrieve payload */
+
+      /* Increment and call */
       ++i;
       retval = pcap_next_ex(file, &hdr, &data);
    }
@@ -51,19 +56,53 @@ void read_packets(){
 }
 
 
-/* Read MAC addresses and print */
-void parse_ether(){
+/* Read MAC addresses and return payload type */
+uint16_t parse_ether(){
    struct ether_addr address;
    struct eth_frame frame;
+   char buff[MAC_STR_LEN];
 
    printf("\tEthernet Header\n");
    memcpy(&frame, data, sizeof(struct eth_frame));
+   get_mac_str(frame.dst, buff);
+   printf("\t\tDest Mac: %s\n", buff);
+   get_mac_str(frame.src, buff);
+   printf("\t\tSource MAC: %s\n", buff);
 
-   /* Dest */
-   memcpy(address.ether_addr_octet, frame.dst, MAC_BYTES);
-   printf("\t\tDest MAC: %s\n", ether_ntoa(&address)); 
 
-   /* Src */
-   memcpy(address.ether_addr_octet, frame.src, MAC_BYTES);
-   printf("\t\tSource MAC: %s\n\n\n", ether_ntoa(&address)); 
+
+   /* Type (only supports ARP right now) */
+   if(frame.type == ARP_TAG){
+      printf("\t\tType: ARP\n\n");
+      return ARP_TAG;
+   }else{
+      printf("%x\n", frame.type); 
+   }
+   return -1;
 }
+
+void get_mac_str(uint8_t *value, char str[MAC_STR_LEN]){
+   struct ether_addr address;
+   char *temp;
+   
+   memset(str, 0, MAC_STR_LEN);
+   memcpy(address.ether_addr_octet, value, MAC_BYTES);
+   temp = ether_ntoa(&address); 
+   memcpy(str, temp, strlen(temp));
+}
+
+/*
+void parse_arp(){
+   struct arp_frame frame;
+   memcpy(&frame, data + ETH_OFFSET, sizeof(struct arp_frame));
+
+   Src 
+   memcpy(address.ether_addr_octet, frame.src_mac, MAC_BYTES);
+   printf("\t\tSender MAC: %s\n", ether_ntoa(&address)); 
+
+   Dest 
+   memcpy(address.ether_addr_octet, frame.destclea_mac, MAC_BYTES);
+   printf("\t\tTarget MAC: %s\n", ether_ntoa(&address)); 
+}
+*/
+
