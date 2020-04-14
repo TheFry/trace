@@ -1,31 +1,13 @@
 #include "trace.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <pcap/pcap.h>
-/* For net address manipulation */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netinet/ether.h>
-#include <endian.h>
-
-/* Number of bytes for MAC address*/
-#define MAC_BYTES 6
-struct eth_frame{
-   uint8_t dst[MAC_BYTES];
-   uint8_t src[MAC_BYTES];
-   uint16_t type;
-} __attribute__((packed));
-
-void parse_ether();
-void print_ether(struct eth_frame);
-void read_packets();
 
 /* Globals */
 static pcap_t *file;
 static struct pcap_pkthdr *hdr;
 static const u_char *data;
+
+void read_packets();
+void parse_ether();
+
 
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
@@ -43,13 +25,17 @@ int main(int argc, char **argv){
 }
 
 
-/*Search Packets for headers */
+/* Search Packets for headers 
+   This is where the main loop is executed */
 void read_packets(){
+   /* Error check and interator */
    int retval = 0;
    int i = 1;
 
+   /* Get packet */
    retval = pcap_next_ex(file, &hdr, &data);
    
+   /* While there are still packets, read */
    while(retval == 1){
       printf("Packet number: %d  Frame Len: %d\n\n", i, hdr->caplen);
       parse_ether();
@@ -57,6 +43,7 @@ void read_packets(){
       retval = pcap_next_ex(file, &hdr, &data);
    }
 
+   /* If the loop was broken for an unknown issue, error and exit. */
    if(retval == PCAP_ERROR){
       perror("Error reading next packet");
       exit(-1);
@@ -64,6 +51,7 @@ void read_packets(){
 }
 
 
+/* Read MAC addresses and print */
 void parse_ether(){
    struct ether_addr address;
    struct eth_frame frame;

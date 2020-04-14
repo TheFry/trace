@@ -11,7 +11,7 @@ all:  trace
 trace: trace.c
 	$(CC) $(CFLAGS) -o trace trace.c checksum.c  -lpcap 
 
-test: trace.c
+test: trace.c trace.h
 	$(CC) $(CFLAGS) -o trace trace.c -lpcap
 clean:
 	rm -f trace
