@@ -11,14 +11,17 @@
 
 
 #define MAC_BYTES 6
-
+#define IP_HLEN_MULTI 4
 /* These lengths have extra padding */
 #define MAC_STR_LEN 20
 #define IP_STR_LEN 20
 
-#define ARP_TAG 0x0608
+#define ICMP_TAG 0x01
+#define IP4_TAG 0x0800
+#define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002
+
 #define ETH_LEN sizeof(struct eth_frame)
 
 /* Fields are populated by reading raw frame data */
@@ -38,6 +41,22 @@ struct arp_header{
    uint8_t src_mac[MAC_BYTES];
    uint32_t src_ip;
    uint8_t dest_mac[MAC_BYTES];
+   uint32_t dest_ip;
+} __attribute__ ((packed));
+
+
+struct ip4_header{
+   /* Version and header length each 4 bits */
+   uint8_t version_hlen;
+   uint8_t tos;
+   uint16_t pdu_len;
+   uint16_t id;
+   /* flags + fragment offset */
+   uint16_t flags_offset;
+   uint8_t ttl;
+   uint8_t protocol;
+   uint16_t hchecksum;
+   uint32_t src_ip;
    uint32_t dest_ip;
 } __attribute__ ((packed));
 

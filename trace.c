@@ -10,12 +10,13 @@ uint16_t parse_ether();
 void parse_arp();
 void get_mac_str(uint8_t *, char *);
 void get_ip_str(uint32_t, char *);
+void parse_ip4();
 
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
    char errbuf[PCAP_ERRBUF_SIZE];
    /* Open file */
-   file = pcap_open_offline("./given/arp/ArpTest.pcap", errbuf);
+   file = pcap_open_offline("./given/PingTest.pcap", errbuf);
 
    if(file == NULL){
       printf("%s\n", errbuf);
@@ -43,11 +44,15 @@ void read_packets(){
    while(retval == 1){
       printf("\nPacket number: %d  Frame Len: %d\n\n", i, hdr->caplen);
       payload_t = parse_ether();
-
-      /* Determine and retrieve payload */
+      /* ARP payload */
       if(payload_t == ARP_TAG){
          parse_arp();
+      
+      /*IP Payload */
+      }else if(payload_t == IP4_TAG){
+         parse_ip4();
       }
+
       /* Increment and call */
       ++i;
       retval = pcap_next_ex(file, &hdr, &data);
@@ -80,13 +85,19 @@ uint16_t parse_ether(){
    get_mac_str(frame.src, buff);
    printf("\t\tSource MAC: %s\n", buff);
 
-   /* Print and return type field */
-   if(frame.type == ARP_TAG){
+   /* ARP */
+   if(ntohs(frame.type) == ARP_TAG){
       printf("\t\tType: ARP\n\n");
       return ARP_TAG;
-   }else{
-      printf("Type: 0x%x\n", frame.type); 
+   
+   /* IP */
+   }else if(ntohs(frame.type) == IP4_TAG){
+      printf("\t\tType: IP\n\n");
+      return IP4_TAG;
    }
+
+   /* Other */
+   printf("\t\tType: 0x%x\n", ntohs(frame.type)); 
    return -1;
 }
 
@@ -117,11 +128,17 @@ void get_ip_str(uint32_t value, char str[IP_STR_LEN]){
    char *temp;
    struct in_addr address;
 
+   /* 0 out string */
    memset(str, 0, IP_STR_LEN);
+
+   /* Put address into usable form */
    address.s_addr = (in_addr_t) value;
+
+   /* Convert and return */
    temp = inet_ntoa(address);
    memcpy(str, temp, strlen(temp));
 }
+
 
 /* Parse ARP header */
 void parse_arp(){
@@ -134,7 +151,7 @@ void parse_arp(){
    /* Get arp header info from pcap file */
    memcpy(&header, data + ETH_LEN, sizeof(struct arp_header));
 
-   /* Opcode: Conver to host and compare Request/Reply values*/
+   /* Opcode: Convert to host and compare Request/Reply values*/
    printf("\t\tOpcode: ");
    if(ntohs(header.opcode) == ARP_REQUEST){
       printf("Request\n");
@@ -159,3 +176,33 @@ void parse_arp(){
 }
 
 
+void parse_ip4(){
+   struct ip4_header header;
+
+   char ip_buff[IP_STR_LEN];
+
+
+   printf("\tIP Header\n");
+
+   memcpy(&header, data + ETH_LEN, sizeof(struct ip4_header));
+
+   printf("\t\tHeader Len: %d (bytes)\n",
+         (header.version_hlen & 0x0F) * IP_HLEN_MULTI);
+
+   printf("\t\tTOS: 0x%X\n", header.tos);
+   printf("\t\tTIL: %d\n", header.ttl);
+   printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
+   
+   printf("\t\tProtocol: ");
+   if(header.protocol == ICMP_TAG){
+      printf("ICMP\n");
+   }else{
+      printf("0x%X\n", header.protocol);
+   }
+   /* Need Checksum */
+   get_ip_str(header.src_ip, ip_buff);
+   printf("\t\tSender IP: %s\n", ip_buff);
+   get_ip_str(header.dest_ip, ip_buff);
+   printf("\t\tDest IP: %s\n", ip_buff);
+   printf("\n");
+}
