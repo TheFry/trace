@@ -22,7 +22,7 @@
 #define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002
-#define ICMP_REQ 8
+#define ICMP_REQ 0x08
 #define ICMP_REP 0
 
 #define ETH_LEN sizeof(struct eth_frame)

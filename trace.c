@@ -131,7 +131,7 @@ uint16_t parse_ip4(){
    header_length = (header.version_hlen & 0x0F) * IP_HLEN_MULTI;
 
    printf("\t\tHeader Len: %d (bytes)\n",header_length);
-   printf("\t\tTOS: 0x%X\n", header.tos);
+   printf("\t\tTOS: 0x%x\n", header.tos);
    printf("\t\tTTL: %d\n", header.ttl);
    printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
    
@@ -141,7 +141,7 @@ uint16_t parse_ip4(){
       printf("ICMP\n");
       retval = ICMP_TAG;
    }else{
-      printf("0x%X\n", header.protocol);
+      printf("Unknown\n");
    }
    
    /* Calculate/print Checksum */
