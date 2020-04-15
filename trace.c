@@ -15,8 +15,14 @@ void parse_ip4();
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
    char errbuf[PCAP_ERRBUF_SIZE];
+   
+   if(argc != 2){
+      printf("Usage: trace TraceFile.pcap\n");
+      exit(-1);
+   }
+
    /* Open file */
-   file = pcap_open_offline("./given/PingTest.pcap", errbuf);
+   file = pcap_open_offline(argv[1], errbuf);
 
    if(file == NULL){
       printf("%s\n", errbuf);
@@ -24,6 +30,7 @@ int main(int argc, char **argv){
    }
 
    read_packets();
+   pcap_close(file);
    return 0;
 }
 
@@ -102,44 +109,6 @@ uint16_t parse_ether(){
 }
 
 
-/* Take a 6 byte array MAC (value) and convert it
- * to a printable string 
- */
-void get_mac_str(uint8_t *value, char str[MAC_STR_LEN]){
-   struct ether_addr address;
-   char *temp;
-   
-   /* 0 out return string */
-   memset(str, 0, MAC_STR_LEN);
-
-   /* Put address into a usable form for ether_ntoa() */
-   memcpy(address.ether_addr_octet, value, MAC_BYTES);
-   
-   /* Convert and return */
-   temp = ether_ntoa(&address); 
-   memcpy(str, temp, strlen(temp));
-}
-
-
-/* Take a uint32_t ip value and convert it
- * to a printable string 
- */
-void get_ip_str(uint32_t value, char str[IP_STR_LEN]){
-   char *temp;
-   struct in_addr address;
-
-   /* 0 out string */
-   memset(str, 0, IP_STR_LEN);
-
-   /* Put address into usable form */
-   address.s_addr = (in_addr_t) value;
-
-   /* Convert and return */
-   temp = inet_ntoa(address);
-   memcpy(str, temp, strlen(temp));
-}
-
-
 /* Parse ARP header */
 void parse_arp(){
    struct arp_header header;
@@ -176,23 +145,23 @@ void parse_arp(){
 }
 
 
+/* Parse IPv4 headers */
 void parse_ip4(){
    struct ip4_header header;
-
-   char ip_buff[IP_STR_LEN];
-
+   char ip_buff[IP_STR_LEN]; /* String Buffer */
 
    printf("\tIP Header\n");
 
+   /* Get IPv4 data from pcap file */
    memcpy(&header, data + ETH_LEN, sizeof(struct ip4_header));
 
    printf("\t\tHeader Len: %d (bytes)\n",
          (header.version_hlen & 0x0F) * IP_HLEN_MULTI);
-
    printf("\t\tTOS: 0x%X\n", header.tos);
    printf("\t\tTIL: %d\n", header.ttl);
    printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
    
+   /* Check payload protocol */
    printf("\t\tProtocol: ");
    if(header.protocol == ICMP_TAG){
       printf("ICMP\n");
@@ -200,9 +169,50 @@ void parse_ip4(){
       printf("0x%X\n", header.protocol);
    }
    /* Need Checksum */
+
+   /* IP addresses */
    get_ip_str(header.src_ip, ip_buff);
    printf("\t\tSender IP: %s\n", ip_buff);
    get_ip_str(header.dest_ip, ip_buff);
    printf("\t\tDest IP: %s\n", ip_buff);
+
    printf("\n");
+}
+
+
+/* Take a 6 byte array MAC (value) and convert it
+ * to a printable string 
+ */
+void get_mac_str(uint8_t *value, char str[MAC_STR_LEN]){
+   struct ether_addr address;
+   char *temp;
+   
+   /* 0 out return string */
+   memset(str, 0, MAC_STR_LEN);
+
+   /* Put address into a usable form for ether_ntoa() */
+   memcpy(address.ether_addr_octet, value, MAC_BYTES);
+   
+   /* Convert and return */
+   temp = ether_ntoa(&address); 
+   memcpy(str, temp, strlen(temp));
+}
+
+
+/* Take a uint32_t ip value and convert it
+ * to a printable string 
+ */
+void get_ip_str(uint32_t value, char str[IP_STR_LEN]){
+   char *temp;
+   struct in_addr address;
+
+   /* 0 out string */
+   memset(str, 0, IP_STR_LEN);
+
+   /* Put address into usable form */
+   address.s_addr = (in_addr_t) value;
+
+   /* Convert and return */
+   temp = inet_ntoa(address);
+   memcpy(str, temp, strlen(temp));
 }
