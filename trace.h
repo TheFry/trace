@@ -18,6 +18,7 @@
 
 #define ICMP_TAG 0x01
 #define IP4_TAG 0x0800
+#define VALID_IP_CHK 0
 #define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002

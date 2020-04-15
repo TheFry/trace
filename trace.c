@@ -1,4 +1,5 @@
 #include "trace.h"
+#include "checksum.h"
 
 /* Globals */
 static pcap_t *file;
@@ -149,14 +150,19 @@ void parse_arp(){
 void parse_ip4(){
    struct ip4_header header;
    char ip_buff[IP_STR_LEN]; /* String Buffer */
+   uintptr_t start_addr;
+   unsigned short checksum = 0;
+   int header_length = 0;
 
    printf("\tIP Header\n");
 
-   /* Get IPv4 data from pcap file */
-   memcpy(&header, data + ETH_LEN, sizeof(struct ip4_header));
+   start_addr = (uintptr_t)data + ETH_LEN;
 
-   printf("\t\tHeader Len: %d (bytes)\n",
-         (header.version_hlen & 0x0F) * IP_HLEN_MULTI);
+   /* Get IPv4 data from pcap file */
+   memcpy(&header, (void *)start_addr, sizeof(struct ip4_header));
+   header_length = (header.version_hlen & 0x0F) * IP_HLEN_MULTI;
+
+   printf("\t\tHeader Len: %d (bytes)\n",header_length);
    printf("\t\tTOS: 0x%X\n", header.tos);
    printf("\t\tTIL: %d\n", header.ttl);
    printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
@@ -168,7 +174,16 @@ void parse_ip4(){
    }else{
       printf("0x%X\n", header.protocol);
    }
-   /* Need Checksum */
+   
+   /* Calculate/print Checksum */
+   checksum = in_cksum((void *)start_addr, header_length);
+   printf("\t\tCHKSUM: ");
+   if(checksum == VALID_IP_CHK){
+      printf("Correct ");
+   }else{
+      printf("Incorrect ");
+   }
+   printf("(0x%X)\n", header.hchecksum);
 
    /* IP addresses */
    get_ip_str(header.src_ip, ip_buff);
