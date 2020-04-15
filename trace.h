@@ -22,10 +22,13 @@
 #define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002
+#define ICMP_REQ 8
+#define ICMP_REP 0
 
 #define ETH_LEN sizeof(struct eth_frame)
+#define IP_LEN sizeof(struct eth_frame) + sizeof(struct ip4_header)
 
-/* Fields are populated by reading raw frame data */
+
 struct eth_frame{
    uint8_t dst[MAC_BYTES];
    uint8_t src[MAC_BYTES];
@@ -60,6 +63,7 @@ struct ip4_header{
    uint32_t src_ip;
    uint32_t dest_ip;
 } __attribute__ ((packed));
+
 
 /* Function declarations
 

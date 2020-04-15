@@ -11,8 +11,8 @@ uint16_t parse_ether();
 void parse_arp();
 void get_mac_str(uint8_t *, char *);
 void get_ip_str(uint32_t, char *);
-void parse_ip4();
-
+uint16_t parse_ip4();
+void parse_icmp();
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
    char errbuf[PCAP_ERRBUF_SIZE];
@@ -58,7 +58,10 @@ void read_packets(){
       
       /*IP Payload */
       }else if(payload_t == IP4_TAG){
-         parse_ip4();
+         payload_t = parse_ip4();
+         if(payload_t == ICMP_TAG){
+            parse_icmp();
+         }
       }
 
       /* Increment and call */
@@ -110,6 +113,58 @@ uint16_t parse_ether(){
 }
 
 
+/* Parse IPv4 headers */
+uint16_t parse_ip4(){
+   struct ip4_header header;
+   char ip_buff[IP_STR_LEN]; /* String Buffer */
+   uintptr_t start_addr;
+   unsigned short checksum = 0;
+   int header_length = 0;
+   uint16_t retval = 0;
+
+   printf("\tIP Header\n");
+
+   start_addr = (uintptr_t)data + ETH_LEN;
+
+   /* Get IPv4 data from pcap file */
+   memcpy(&header, (void *)start_addr, sizeof(struct ip4_header));
+   header_length = (header.version_hlen & 0x0F) * IP_HLEN_MULTI;
+
+   printf("\t\tHeader Len: %d (bytes)\n",header_length);
+   printf("\t\tTOS: 0x%X\n", header.tos);
+   printf("\t\tTTL: %d\n", header.ttl);
+   printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
+   
+   /* Check payload protocol */
+   printf("\t\tProtocol: ");
+   if(header.protocol == ICMP_TAG){
+      printf("ICMP\n");
+      retval = ICMP_TAG;
+   }else{
+      printf("0x%X\n", header.protocol);
+   }
+   
+   /* Calculate/print Checksum */
+   checksum = in_cksum((void *)start_addr, header_length);
+   printf("\t\tChecksum: ");
+   if(checksum == VALID_IP_CHK){
+      printf("Correct ");
+   }else{
+      printf("Incorrect ");
+   }
+   printf("(0x%x)\n", header.hchecksum);
+
+   /* IP addresses */
+   get_ip_str(header.src_ip, ip_buff);
+   printf("\t\tSender IP: %s\n", ip_buff);
+   get_ip_str(header.dest_ip, ip_buff);
+   printf("\t\tDest IP: %s\n", ip_buff);
+
+   printf("\n");
+   return retval;
+}
+
+
 /* Parse ARP header */
 void parse_arp(){
    struct arp_header header;
@@ -146,52 +201,20 @@ void parse_arp(){
 }
 
 
-/* Parse IPv4 headers */
-void parse_ip4(){
-   struct ip4_header header;
-   char ip_buff[IP_STR_LEN]; /* String Buffer */
-   uintptr_t start_addr;
-   unsigned short checksum = 0;
-   int header_length = 0;
+/* Parse ICMP */
+void parse_icmp(){
+   uint8_t type = 0;
 
-   printf("\tIP Header\n");
-
-   start_addr = (uintptr_t)data + ETH_LEN;
-
-   /* Get IPv4 data from pcap file */
-   memcpy(&header, (void *)start_addr, sizeof(struct ip4_header));
-   header_length = (header.version_hlen & 0x0F) * IP_HLEN_MULTI;
-
-   printf("\t\tHeader Len: %d (bytes)\n",header_length);
-   printf("\t\tTOS: 0x%X\n", header.tos);
-   printf("\t\tTIL: %d\n", header.ttl);
-   printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
-   
-   /* Check payload protocol */
-   printf("\t\tProtocol: ");
-   if(header.protocol == ICMP_TAG){
-      printf("ICMP\n");
+   printf("\tICMP Header\n");
+   memcpy(&type, data + IP_LEN, sizeof(uint8_t));
+   printf("\t\tType: ");
+   if(type == ICMP_REQ){
+      printf("Request\n\n");
+   }else if(type == ICMP_REP){
+      printf("Reply\n\n");
    }else{
-      printf("0x%X\n", header.protocol);
+      printf("Unknown\n\n");
    }
-   
-   /* Calculate/print Checksum */
-   checksum = in_cksum((void *)start_addr, header_length);
-   printf("\t\tCHKSUM: ");
-   if(checksum == VALID_IP_CHK){
-      printf("Correct ");
-   }else{
-      printf("Incorrect ");
-   }
-   printf("(0x%X)\n", header.hchecksum);
-
-   /* IP addresses */
-   get_ip_str(header.src_ip, ip_buff);
-   printf("\t\tSender IP: %s\n", ip_buff);
-   get_ip_str(header.dest_ip, ip_buff);
-   printf("\t\tDest IP: %s\n", ip_buff);
-
-   printf("\n");
 }
 
 
