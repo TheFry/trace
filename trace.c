@@ -11,8 +11,10 @@ uint16_t parse_ether();
 void parse_arp();
 void get_mac_str(uint8_t *, char *);
 void get_ip_str(uint32_t, char *);
-uint16_t parse_ip4();
+uint16_t parse_ip4(int *);
 void parse_icmp();
+
+
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
    char errbuf[PCAP_ERRBUF_SIZE];
@@ -128,9 +130,12 @@ uint16_t parse_ip4(int *len){
 
    /* Get IPv4 data from pcap file */
    memcpy(&header, (void *)start_addr, sizeof(struct ip4_header));
+   
+   /* Calculate header length and set return argument */
    header_length = (header.version_hlen & 0x0F) * IP_HLEN_MULTI;
    *len = header_length;
 
+   /* Print basic info */
    printf("\t\tHeader Len: %d (bytes)\n",header_length);
    printf("\t\tTOS: 0x%x\n", header.tos);
    printf("\t\tTTL: %d\n", header.ttl);
