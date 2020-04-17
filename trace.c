@@ -40,10 +40,10 @@ int main(int argc, char **argv){
  * This is where the main loop is executed 
  */
 void read_packets(){
-   /* Error check and interator */
    int retval = 0;
    int i = 1;
    uint16_t payload_t;
+   int len = 0;         /* Length of IP header */
 
    /* Get packet */
    retval = pcap_next_ex(file, &hdr, &data);
@@ -58,9 +58,9 @@ void read_packets(){
       
       /*IP Payload */
       }else if(payload_t == IP4_TAG){
-         payload_t = parse_ip4();
+         payload_t = parse_ip4(&len);
          if(payload_t == ICMP_TAG){
-            parse_icmp();
+            parse_icmp(len);
          }
       }
 
@@ -114,7 +114,7 @@ uint16_t parse_ether(){
 
 
 /* Parse IPv4 headers */
-uint16_t parse_ip4(){
+uint16_t parse_ip4(int *len){
    struct ip4_header header;
    char ip_buff[IP_STR_LEN]; /* String Buffer */
    uintptr_t start_addr;
@@ -129,6 +129,7 @@ uint16_t parse_ip4(){
    /* Get IPv4 data from pcap file */
    memcpy(&header, (void *)start_addr, sizeof(struct ip4_header));
    header_length = (header.version_hlen & 0x0F) * IP_HLEN_MULTI;
+   *len = header_length;
 
    printf("\t\tHeader Len: %d (bytes)\n",header_length);
    printf("\t\tTOS: 0x%x\n", header.tos);
@@ -202,19 +203,23 @@ void parse_arp(){
 
 
 /* Parse ICMP */
-void parse_icmp(){
+void parse_icmp(int ip_len){
    uint8_t type = 0;
-
    printf("\tICMP Header\n");
-   memcpy(&type, data + IP_LEN, sizeof(uint8_t));
+   memcpy(&type, data + ETH_LEN + ip_len, sizeof(uint8_t));
    printf("\t\tType: ");
    if(type == ICMP_REQ){
       printf("Request\n\n");
    }else if(type == ICMP_REP){
       printf("Reply\n\n");
    }else{
-      printf("Unknown\n\n");
+      printf("%d\n\n", type);
    }
+}
+
+
+void parse_UDP(){
+
 }
 
 

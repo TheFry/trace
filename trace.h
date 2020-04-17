@@ -26,7 +26,6 @@
 #define ICMP_REP 0
 
 #define ETH_LEN sizeof(struct eth_frame)
-#define IP_LEN sizeof(struct eth_frame) + sizeof(struct ip4_header)
 
 
 struct eth_frame{
