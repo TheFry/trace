@@ -14,7 +14,7 @@ void get_ip_str(uint32_t, char *);
 uint16_t parse_ip4(int *);
 void parse_icmp();
 void parse_tcp();
-void parse_tcp_flags(struct tcp_header);
+
 
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
@@ -231,28 +231,21 @@ void parse_icmp(int ip_len){
 
 void parse_tcp(int ip_len){
    struct tcp_header header;
-   /*int len;*/
+   uint16_t h_order = 0;
+   uint8_t hlen = 0;
 
    memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
 
    printf("\tTCP Header:\n");
-   /* Source and Dest ports */
    printf("\t\tSource Port: : %u\n", ntohs(header.src_port));
    printf("\t\tDest Port: : %u\n", ntohs(header.dst_port));
    printf("\t\tSequence Number: %u\n", ntohl(header.seq_num));
-   parse_tcp_flags(header);
-   printf("\t\tWindow Size: %u\n\n", ntohs(header.window_size));
 
-}
-
-
-void parse_tcp_flags(struct tcp_header header){
-   uint16_t h_order = 0;
-   uint8_t hlen = 0;
-
+   /* Load offset/flag bits into h_order.
+    * Conver to host order */
    h_order = ntohs(header.hlen_flags);
 
-   /* Get header length bits */
+   /* Get header length/offset bits */
    hlen = (h_order & 0xF000) >> 12;
 
    /* Print ACK num/flag */
@@ -262,18 +255,24 @@ void parse_tcp_flags(struct tcp_header header){
    }else{
       printf("<not valid>\n\t\tACK Flag: No\n");
    }
-   /*SYN Flag */
+
+   /* SYN Flag */
    printf("\t\tSYN Flag: ");
    if(((h_order >> 1) & 0x0001) == 0x0001){printf("Yes\n");}
    else{printf("No\n");}
 
+   /* RST flag */
    printf("\t\tRST Flag: ");
    if(((h_order >> 2) & 0x0001) == 0x0001){printf("Yes\n");}
    else{printf("No\n");}
 
+   /* FIN flag */
    printf("\t\tFIN Flag: ");
    if((h_order & 0x0001) == 0x0001){printf("Yes\n");}
    else{printf("No\n");}
+
+   /* Window Size */
+   printf("\t\tWindow Size: %u\n\n", ntohs(header.window_size));
 }
 
 /*
