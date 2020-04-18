@@ -13,7 +13,8 @@ void get_mac_str(uint8_t *, char *);
 void get_ip_str(uint32_t, char *);
 uint16_t parse_ip4(int *);
 void parse_icmp();
-
+void parse_tcp();
+void parse_tcp_flags(struct tcp_header);
 
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
@@ -52,7 +53,7 @@ void read_packets(){
    
    /* While there are still packets, read */
    while(retval == 1){
-      printf("\nPacket number: %d  Frame Len: %d\n\n", i, hdr->caplen);
+      printf("\nPacket number: %u  Frame Len: %u\n\n", i, hdr->caplen);
       payload_t = parse_ether();
       /* ARP payload */
       if(payload_t == ARP_TAG){
@@ -63,6 +64,8 @@ void read_packets(){
          payload_t = parse_ip4(&len);
          if(payload_t == ICMP_TAG){
             parse_icmp(len);
+         }else if(payload_t == TCP_TAG){
+            parse_tcp(len);
          }
       }
 
@@ -136,16 +139,19 @@ uint16_t parse_ip4(int *len){
    *len = header_length;
 
    /* Print basic info */
-   printf("\t\tHeader Len: %d (bytes)\n",header_length);
+   printf("\t\tHeader Len: %u (bytes)\n",header_length);
    printf("\t\tTOS: 0x%x\n", header.tos);
-   printf("\t\tTTL: %d\n", header.ttl);
-   printf("\t\tIP PDU Len: %d (bytes)\n", ntohs(header.pdu_len));
+   printf("\t\tTTL: %u\n", header.ttl);
+   printf("\t\tIP PDU Len: %u (bytes)\n", ntohs(header.pdu_len));
    
    /* Check payload protocol */
    printf("\t\tProtocol: ");
    if(header.protocol == ICMP_TAG){
       printf("ICMP\n");
       retval = ICMP_TAG;
+   }else if(header.protocol == TCP_TAG){
+      printf("TCP\n");
+      retval = TCP_TAG;
    }else{
       printf("Unknown\n");
    }
@@ -218,14 +224,64 @@ void parse_icmp(int ip_len){
    }else if(type == ICMP_REP){
       printf("Reply\n\n");
    }else{
-      printf("%d\n\n", type);
+      printf("%u\n\n", type);
    }
 }
 
 
-void parse_UDP(){
+void parse_tcp(int ip_len){
+   struct tcp_header header;
+   /*int len;*/
+
+   memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
+
+   printf("\tTCP Header:\n");
+   /* Source and Dest ports */
+   printf("\t\tSource Port: : %u\n", ntohs(header.src_port));
+   printf("\t\tDest Port: : %u\n", ntohs(header.dst_port));
+   printf("\t\tSequence Number: %u\n", ntohl(header.seq_num));
+   parse_tcp_flags(header);
+   printf("\t\tWindow Size: %u\n\n", ntohs(header.window_size));
 
 }
+
+
+void parse_tcp_flags(struct tcp_header header){
+   uint16_t h_order = 0;
+   uint8_t hlen = 0;
+
+   h_order = ntohs(header.hlen_flags);
+
+   /* Get header length bits */
+   hlen = (h_order & 0xF000) >> 12;
+
+   /* Print ACK num/flag */
+   printf("\t\tACK Number: ");
+   if((h_order & 0x0010) >> 4 == 0x0001){
+      printf("%u\n\t\tACK Flag: Yes\n", header.ack_num);
+   }else{
+      printf("<not valid>\n\t\tACK Flag: No\n");
+   }
+   /*SYN Flag */
+   printf("\t\tSYN Flag: ");
+   if(((h_order >> 1) & 0x0001) == 0x0001){printf("Yes\n");}
+   else{printf("No\n");}
+
+   printf("\t\tRST Flag: ");
+   if(((h_order >> 2) & 0x0001) == 0x0001){printf("Yes\n");}
+   else{printf("No\n");}
+
+   printf("\t\tFIN Flag: ");
+   if((h_order & 0x0001) == 0x0001){printf("Yes\n");}
+   else{printf("No\n");}
+}
+
+/*
+void tcp_check(struct tcp_header tcp){
+   struct ip_header ip;
+
+}
+*/
 
 
 /* Take a 6 byte array MAC (value) and convert it
