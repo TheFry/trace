@@ -48,7 +48,10 @@
 
 /* TCP info */
 #define TCP_TAG 0x0006
-
+#define ACK_FLAG 0x0010
+#define SYN_FLAG 0x0002
+#define RST_FLAG 0x0004
+#define FIN_FLAG 0x0001
 
 /* TCP and UDP ports */
 #define HTTP 80
@@ -56,8 +59,6 @@
 #define FTP 21
 #define POP3 110
 #define SMTP 25
-
-
 
 
 struct eth_frame{

@@ -288,7 +288,7 @@ void parse_tcp_flags(struct tcp_header *header){
 
    /* Print ACK num/flag */
    printf("\t\tACK Number: ");
-   if((h_order & 0x0010) >> 4 == 0x0001){
+   if((h_order & ACK_FLAG) == ACK_FLAG){
       printf("%u\n\t\tACK Flag: Yes\n", ntohl(header->ack_num));
    }else{
       printf("<not valid>\n\t\tACK Flag: No\n");
@@ -296,18 +296,27 @@ void parse_tcp_flags(struct tcp_header *header){
 
    /* SYN Flag */
    printf("\t\tSYN Flag: ");
-   if(((h_order >> 1) & 0x0001) == 0x0001){printf("Yes\n");}
-   else{printf("No\n");}
+   if((h_order & SYN_FLAG) == SYN_FLAG){
+      printf("Yes\n");
+   }else{
+      printf("No\n");
+   }
 
    /* RST flag */
    printf("\t\tRST Flag: ");
-   if(((h_order >> 2) & 0x0001) == 0x0001){printf("Yes\n");}
-   else{printf("No\n");}
+   if((h_order & RST_FLAG) == RST_FLAG){
+      printf("Yes\n");
+   }else{
+      printf("No\n");
+   }
 
    /* FIN flag */
    printf("\t\tFIN Flag: ");
-   if((h_order & 0x0001) == 0x0001){printf("Yes\n");}
-   else{printf("No\n");}
+   if((h_order & FIN_FLAG) == FIN_FLAG){
+      printf("Yes\n");
+   }else{
+      printf("No\n");
+   }
 }
 
 
