@@ -333,31 +333,27 @@ void tcp_check(int ip_len){
    int tcp_location = ETH_LEN + ip_len;
    unsigned int header_length;
    uint16_t tcp_len;
-   /* Load ip and tcp frames */
+
    memcpy(&tcp, data + tcp_location, sizeof(struct tcp_header));
    memcpy(&ip, data + ETH_LEN, sizeof(struct ip4_header));
-   /* Calculate TCP length 
-    * Convert to host order first 
-    */
+   
    header_length = (ip.version_hlen & 0x0F) * IP_HLEN_MULTI;
    tcp_len = ntohs(ip.pdu_len) - header_length;
-    /* Copy info from ip header to ptcp header (network order) 
-    * Ip header data is already in network order 
-    */
+
    ptcp.src_ip = ip.src_ip;
    ptcp.dest_ip = ip.dest_ip;
    ptcp.reserved = 0;
    ptcp.protocol = ip.protocol;
    ptcp.tcp_len = htons(tcp_len);
+   
    /* Create buffer to hold pheader and pdu 
     * The variable "data" refers to the start of the packet
     */
    buff = malloc(sizeof(struct tcp_pheader) + tcp_len);
    memcpy(buff, &ptcp, sizeof(struct tcp_pheader));
    memcpy(buff + sizeof(struct tcp_pheader), data + tcp_location, tcp_len);
-   /* Set checksum field to 0 for calculation by overlaying a struct
-    * on the new data
-    */
+   
+   /* Set checksum field to 0 for calculation by overlaying a struct */
    overlay = (void *)buff + sizeof(struct tcp_pheader);
    overlay->checksum = 0;
 
