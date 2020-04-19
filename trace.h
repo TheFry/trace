@@ -20,7 +20,6 @@
 #define ICMP_TAG 0x01
 #define IP4_TAG 0x0800
 #define VALID_IP_CHK 0
-#define VALID_TCP_CHK 0
 #define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002
@@ -28,6 +27,12 @@
 #define ICMP_REP 0
 
 #define ETH_LEN sizeof(struct eth_frame)
+
+#define HTTP 80
+#define TELNET 23
+#define FTP 21
+#define POP3 110
+#define SMTP 25
 
 
 struct eth_frame{
@@ -90,6 +95,12 @@ struct tcp_header{
 } __attribute__ ((packed));
 
 
+struct udp_header{
+   uint16_t src_port;
+   uint16_t dest_port;
+   uint16_t len;
+   uint16_t checksum;
+} __attribute__ ((packed));
 /* Function declarations
 
 */

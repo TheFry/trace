@@ -15,7 +15,9 @@ void get_ip_str(uint32_t, char *);
 uint16_t parse_ip4(int *);
 void parse_icmp();
 void parse_tcp();
+void parse_tcp_flags(struct tcp_header *);
 void tcp_check(int);
+void print_port(uint16_t);
 
 
 /* Parse args, open file, launch program */
@@ -65,10 +67,10 @@ void read_packets(){
       /*IP Payload */
       }else if(payload_t == IP4_TAG){
          payload_t = parse_ip4(&len);
-         if(payload_t == ICMP_TAG){
+         if(payload_t == ICMP_TAG){       /* ICMP */
             parse_icmp(len);
          }else if(payload_t == TCP_TAG){
-            parse_tcp(len);
+            parse_tcp(len);               /* TCP */
          }
       }
 
@@ -121,18 +123,17 @@ uint16_t parse_ether(){
 }
 
 
-/* Parse IPv4 headers */
+/* Parse IPv4 headers and return the protocol 
+ */
 uint16_t parse_ip4(int *len){
    struct ip4_header header;
    char ip_buff[IP_STR_LEN]; /* String Buffer */
-   uintptr_t start_addr;
+   uintptr_t start_addr = (uintptr_t)data + ETH_LEN;
    unsigned short checksum = 0;
    int header_length = 0;
    uint16_t retval = 0;
 
    printf("\tIP Header\n");
-
-   start_addr = (uintptr_t)data + ETH_LEN;
 
    /* Get IPv4 data from pcap file */
    memcpy(&header, (void *)start_addr, sizeof(struct ip4_header));
@@ -162,11 +163,8 @@ uint16_t parse_ip4(int *len){
    /* Calculate/print Checksum */
    checksum = in_cksum((void *)start_addr, header_length);
    printf("\t\tChecksum: ");
-   if(checksum == VALID_IP_CHK){
-      printf("Correct ");
-   }else{
-      printf("Incorrect ");
-   }
+   if(checksum == VALID_IP_CHK){ printf("Correct ");}
+   else{ printf("Incorrect ");}
    printf("(0x%x)\n", header.hchecksum);
 
    /* IP addresses */
@@ -174,13 +172,14 @@ uint16_t parse_ip4(int *len){
    printf("\t\tSender IP: %s\n", ip_buff);
    get_ip_str(header.dest_ip, ip_buff);
    printf("\t\tDest IP: %s\n", ip_buff);
-
    printf("\n");
    return retval;
 }
 
 
-/* Parse ARP header */
+/* Parse ARP header 
+ * Calls get_mac_str() and get_ip_str()
+ */
 void parse_arp(){
    struct arp_header header;
    char mac_buff[MAC_STR_LEN]; /* String Buffer */
@@ -232,25 +231,44 @@ void parse_icmp(int ip_len){
 }
 
 
+/* Parse TCP header
+ * Calls check_tcp()
+ */
 void parse_tcp(int ip_len){
    struct tcp_header header;
-   uint16_t h_order = 0;
+
 
    memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
 
    printf("\tTCP Header\n");
-   printf("\t\tSource Port: : %u\n", ntohs(header.src_port));
-   printf("\t\tDest Port: : %u\n", ntohs(header.dst_port));
+   printf("\t\tSource Port: : "); 
+   print_port(ntohs(header.src_port));
+   printf("\t\tDest Port: : ");
+   print_port(ntohs(header.dst_port));
    printf("\t\tSequence Number: %u\n", ntohl(header.seq_num));
 
-   /* Load offset/flag bits into h_order.
+   parse_tcp_flags(&header);
+
+   /* Window Size */
+   printf("\t\tWindow Size: %u\n", ntohs(header.window_size));
+   tcp_check(ip_len);
+}
+
+
+/* Print the TCP flags of the given header
+ * Called by parse_tcp
+ */
+void parse_tcp_flags(struct tcp_header *header){
+      /* Load offset/flag bits into h_order.
     * Conver to host order */
-   h_order = ntohs(header.hlen_flags);
+   uint16_t h_order;
+
+   h_order = ntohs(header->hlen_flags);
 
    /* Print ACK num/flag */
    printf("\t\tACK Number: ");
    if((h_order & 0x0010) >> 4 == 0x0001){
-      printf("%u\n\t\tACK Flag: Yes\n", ntohl(header.ack_num));
+      printf("%u\n\t\tACK Flag: Yes\n", ntohl(header->ack_num));
    }else{
       printf("<not valid>\n\t\tACK Flag: No\n");
    }
@@ -269,14 +287,12 @@ void parse_tcp(int ip_len){
    printf("\t\tFIN Flag: ");
    if((h_order & 0x0001) == 0x0001){printf("Yes\n");}
    else{printf("No\n");}
-
-   /* Window Size */
-   printf("\t\tWindow Size: %u\n", ntohs(header.window_size));
-   tcp_check(ip_len);
 }
 
 
-/* Calculate TCP checksum */
+/* Calculate TCP checksum 
+ * Called by parse_tcp()
+ */
 void tcp_check(int ip_len){
    struct ip4_header ip;
    struct tcp_header tcp;
@@ -317,8 +333,8 @@ void tcp_check(int ip_len){
 
    checksum = in_cksum((unsigned short*)(buff),
                         sizeof(struct tcp_pheader) + tcp_len);
+   
    printf("\t\tChecksum: ");
-   /*Check if 0 */
    if(checksum == tcp.checksum){
       printf("Correct ");
       printf("(0x%x)\n", ntohs(checksum));
@@ -327,6 +343,36 @@ void tcp_check(int ip_len){
       printf("(0x%x)\n", ntohs(tcp.checksum));
    }
    free(buff); 
+}
+
+
+void parse_udp(int ip_len){
+   struct udp_header header;
+
+}
+
+
+void print_port(uint16_t port){
+   switch(port){
+      case HTTP :
+         printf("HTTP\n");
+         break;
+      case TELNET :
+         printf("Telnet\n");
+         break;
+      case FTP : 
+         printf("FTP\n");
+         break;
+      case POP3 :
+         printf("POP3\n");
+         break;
+      case SMTP : 
+         printf("SMTP\n");
+         break;
+      default :
+         printf("%u\n", port);
+         break;
+   }
 }
 
 
