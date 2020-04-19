@@ -250,7 +250,7 @@ void parse_tcp(int ip_len){
    /* Print ACK num/flag */
    printf("\t\tACK Number: ");
    if((h_order & 0x0010) >> 4 == 0x0001){
-      printf("%u\n\t\tACK Flag: Yes\n", header.ack_num);
+      printf("%u\n\t\tACK Flag: Yes\n", ntohl(header.ack_num));
    }else{
       printf("<not valid>\n\t\tACK Flag: No\n");
    }
@@ -276,6 +276,7 @@ void parse_tcp(int ip_len){
 }
 
 
+/* Calculate TCP checksum */
 void tcp_check(int ip_len){
    struct ip4_header ip;
    struct tcp_header tcp;
@@ -286,7 +287,6 @@ void tcp_check(int ip_len){
    int tcp_location = ETH_LEN + ip_len;
    unsigned int header_length;
    uint16_t tcp_len;
-
    /* Load ip and tcp frames */
    memcpy(&tcp, data + tcp_location, sizeof(struct tcp_header));
    memcpy(&ip, data + ETH_LEN, sizeof(struct ip4_header));
@@ -321,10 +321,11 @@ void tcp_check(int ip_len){
    /*Check if 0 */
    if(checksum == tcp.checksum){
       printf("Correct ");
+      printf("(0x%x)\n", ntohs(checksum));
    }else{
       printf("Incorrect ");
+      printf("(0x%x)\n", ntohs(tcp.checksum));
    }
-   printf("(0x%x)\n", ntohs(checksum));
    free(buff); 
 }
 
