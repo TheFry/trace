@@ -11,28 +11,53 @@
 
 
 #define MAC_BYTES 6
+
+/*Multiplyer for calculating IP length */
 #define IP_HLEN_MULTI 4
-/* These lengths have extra padding */
+
+
+/* Used for printing arrays 
+ * These lengths have extra padding 
+ */
 #define MAC_STR_LEN 20
 #define IP_STR_LEN 20
 
-#define TCP_TAG 0x0006
-#define ICMP_TAG 0x01
-#define IP4_TAG 0x0800
-#define VALID_IP_CHK 0
+
+/* Length of Ethernet Frame
+ * Used for seeking through file
+ */
+#define ETH_LEN sizeof(struct eth_frame)
+
+
+/* ARP info */
 #define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002
+
+
+/* IP info */
+#define IP4_TAG 0x0800
+#define VALID_IP_CHK 0
+
+
+/* ICMP Info */
+#define ICMP_TAG 0x01
 #define ICMP_REQ 0x08
 #define ICMP_REP 0
 
-#define ETH_LEN sizeof(struct eth_frame)
 
+/* TCP info */
+#define TCP_TAG 0x0006
+
+
+/* TCP and UDP ports */
 #define HTTP 80
 #define TELNET 23
 #define FTP 21
 #define POP3 110
 #define SMTP 25
+
+
 
 
 struct eth_frame{
