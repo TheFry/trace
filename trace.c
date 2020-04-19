@@ -13,6 +13,7 @@ void parse_arp();
 void get_mac_str(uint8_t *, char *);
 void get_ip_str(uint32_t, char *);
 uint16_t parse_ip4(int *);
+uint16_t parse_ip_protocol(struct ip4_header *);
 void ip_check(struct ip4_header *, uintptr_t, int);
 
 void parse_icmp();
@@ -156,25 +157,7 @@ uint16_t parse_ip4(int *len){
    
    /* Check payload protocol */
    printf("\t\tProtocol: ");
-
-   switch(header.protocol){
-      case ICMP_TAG :
-         printf("ICMP\n");
-         retval = ICMP_TAG; 
-         break;
-      case TCP_TAG :
-         printf("TCP\n");
-         retval = TCP_TAG;
-         break;
-      case UDP_TAG :
-         printf("UDP\n");
-         retval = UDP_TAG;
-         break;
-      default :
-         printf("Unknown\n");
-         retval = 0;
-         break;   
-   }
+   retval = parse_ip_protocol(&header);
    
    ip_check(&header, start_addr, header_length);
    
@@ -188,9 +171,38 @@ uint16_t parse_ip4(int *len){
 }
 
 
-/* Calculate/print Checksum */ 
-void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length){
+/* Prints and returns the IP protocol
+ * Called by parse_ip4()
+ */
+uint16_t parse_ip_protocol(struct ip4_header *header){
+      uint16_t retval = 0;
 
+      switch(header->protocol){
+         case ICMP_TAG :
+            printf("ICMP\n");
+            retval = ICMP_TAG; 
+            break;
+         case TCP_TAG :
+            printf("TCP\n");
+            retval = TCP_TAG;
+            break;
+         case UDP_TAG :
+            printf("UDP\n");
+            retval = UDP_TAG;
+            break;
+         default :
+            printf("Unknown\n");
+            retval = 0;
+            break;   
+      }
+   return retval;
+}
+
+
+/* Calculate/print IP Checksum 
+ * Called by parse_ip4()
+ */ 
+void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length){
    uint16_t checksum = 0;
    uint16_t temp = 0;
    uint8_t print_check[2];
@@ -208,15 +220,17 @@ void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length
 
    /* Print if not 0 */
    printf("(0x");
-   if(print_check[0] != 0){printf("%x", print_check[0]);}
-   if(print_check[1] != 0){printf("%x", print_check[1]);}
+   if(print_check[0] != 0){
+      printf("%x", print_check[0]);
+   }
+   if(print_check[1] != 0){
+      printf("%02x", print_check[1]);
+   }
    printf(")\n");
 }
 
 
-/* Parse ARP header 
- * Calls get_mac_str() and get_ip_str()
- */
+/* Parse ARP header  */
 void parse_arp(){
    struct arp_header header;
    char mac_buff[MAC_STR_LEN]; /* String Buffer */
@@ -268,18 +282,16 @@ void parse_icmp(int ip_len){
 }
 
 
-/* Parse TCP header
- * Calls check_tcp()
- */
+/* Parse TCP header */
 void parse_tcp(int ip_len){
    struct tcp_header header;
 
    memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
 
    printf("\tTCP Header\n");
-   printf("\t\tSource Port: : "); 
+   printf("\t\tSource Port: "); 
    print_port(ntohs(header.src_port));
-   printf("\t\tDest Port: : ");
+   printf("\t\tDest Port: ");
    print_port(ntohs(header.dst_port));
    printf("\t\tSequence Number: %u\n", ntohl(header.seq_num));
 
@@ -292,11 +304,9 @@ void parse_tcp(int ip_len){
 
 
 /* Print the TCP flags of the given header
- * Called by parse_tcp
+ * Called by parse_tcp()
  */
 void parse_tcp_flags(struct tcp_header *header){
-      /* Load offset/flag bits into h_order.
-    * Conver to host order */
    uint16_t h_order;
 
    h_order = ntohs(header->hlen_flags);
@@ -392,28 +402,38 @@ void parse_udp(int ip_len){
    uintptr_t udp_location = ETH_LEN + ip_len;
 
    memcpy(&header, data + udp_location, sizeof(struct udp_header));
+
+   printf("\tUDP Header\n");
+   printf("\t\tSource Port: ");
+   print_port(ntohs(header.src_port));
+   printf("\t\tDest Port: ");
+   print_port(ntohs(header.dest_port));
+
 }
 
 
+/* Print tcp/udp port
+ * Called by parse_tcp() and parse_udp()
+ */
 void print_port(uint16_t port){
    switch(port){
       case HTTP :
-         printf("HTTP\n");
+         printf(" HTTP\n");
          break;
       case TELNET :
-         printf("Telnet\n");
+         printf(": Telnet\n");
          break;
       case FTP : 
-         printf("FTP\n");
+         printf(": FTP\n");
          break;
       case POP3 :
-         printf("POP3\n");
+         printf(": POP3\n");
          break;
       case SMTP : 
-         printf("SMTP\n");
+         printf(": SMTP\n");
          break;
       default :
-         printf("%u\n", port);
+         printf(": %u\n", port);
          break;
    }
 }
