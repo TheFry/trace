@@ -13,6 +13,8 @@ void parse_arp();
 void get_mac_str(uint8_t *, char *);
 void get_ip_str(uint32_t, char *);
 uint16_t parse_ip4(int *);
+void ip_check(struct ip4_header *, uintptr_t, int);
+
 void parse_icmp();
 void parse_tcp();
 void parse_tcp_flags(struct tcp_header *);
@@ -129,7 +131,6 @@ uint16_t parse_ip4(int *len){
    struct ip4_header header;
    char ip_buff[IP_STR_LEN]; /* String Buffer */
    uintptr_t start_addr = (uintptr_t)data + ETH_LEN;
-   unsigned short checksum = 0;
    int header_length = 0;
    uint16_t retval = 0;
 
@@ -160,13 +161,7 @@ uint16_t parse_ip4(int *len){
       printf("Unknown\n");
    }
    
-   /* Calculate/print Checksum */
-   checksum = in_cksum((void *)start_addr, header_length);
-   printf("\t\tChecksum: ");
-   if(checksum == VALID_IP_CHK){ printf("Correct ");}
-   else{ printf("Incorrect ");}
-   printf("(0x%x)\n", header.hchecksum);
-
+   ip_check(&header, start_addr, header_length);
    /* IP addresses */
    get_ip_str(header.src_ip, ip_buff);
    printf("\t\tSender IP: %s\n", ip_buff);
@@ -174,6 +169,32 @@ uint16_t parse_ip4(int *len){
    printf("\t\tDest IP: %s\n", ip_buff);
    printf("\n");
    return retval;
+}
+
+
+/* Calculate/print Checksum */ 
+void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length){
+
+   uint16_t checksum = 0;
+   uint16_t temp = 0;
+   uint8_t print_check[2];
+
+   temp = ntohs(header->hchecksum);
+   memcpy(print_check, &temp, sizeof(uint16_t));
+   checksum = in_cksum((void *)start_addr, header_length);
+   
+   printf("\t\tChecksum: ");
+   if(checksum == VALID_IP_CHK){ 
+      printf("Correct ");
+   }else{ 
+      printf("Incorrect ");
+   }
+
+   /* Print if not 0 */
+   printf("(0x");
+   if(print_check[0] != 0){printf("%x", print_check[0]);}
+   if(print_check[1] != 0){printf("%x", print_check[1]);}
+   printf(")\n");
 }
 
 
@@ -222,11 +243,11 @@ void parse_icmp(int ip_len){
    memcpy(&type, data + ETH_LEN + ip_len, sizeof(uint8_t));
    printf("\t\tType: ");
    if(type == ICMP_REQ){
-      printf("Request\n\n");
+      printf("Request\n");
    }else if(type == ICMP_REP){
-      printf("Reply\n\n");
+      printf("Reply\n");
    }else{
-      printf("%u\n\n", type);
+      printf("%u\n", type);
    }
 }
 
