@@ -5,6 +5,7 @@
 static pcap_t *file;
 static struct pcap_pkthdr *hdr;
 static const u_char *data;
+static uint32_t packet_len;
 
 void read_packets();
 uint16_t parse_ether();
@@ -14,6 +15,7 @@ void get_ip_str(uint32_t, char *);
 uint16_t parse_ip4(int *);
 void parse_icmp();
 void parse_tcp();
+void tcp_check(int);
 
 
 /* Parse args, open file, launch program */
@@ -54,6 +56,7 @@ void read_packets(){
    /* While there are still packets, read */
    while(retval == 1){
       printf("\nPacket number: %u  Frame Len: %u\n\n", i, hdr->caplen);
+      packet_len = hdr->len;
       payload_t = parse_ether();
       /* ARP payload */
       if(payload_t == ARP_TAG){
@@ -232,11 +235,10 @@ void parse_icmp(int ip_len){
 void parse_tcp(int ip_len){
    struct tcp_header header;
    uint16_t h_order = 0;
-   uint8_t hlen = 0;
 
    memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
 
-   printf("\tTCP Header:\n");
+   printf("\tTCP Header\n");
    printf("\t\tSource Port: : %u\n", ntohs(header.src_port));
    printf("\t\tDest Port: : %u\n", ntohs(header.dst_port));
    printf("\t\tSequence Number: %u\n", ntohl(header.seq_num));
@@ -244,9 +246,6 @@ void parse_tcp(int ip_len){
    /* Load offset/flag bits into h_order.
     * Conver to host order */
    h_order = ntohs(header.hlen_flags);
-
-   /* Get header length/offset bits */
-   hlen = (h_order & 0xF000) >> 12;
 
    /* Print ACK num/flag */
    printf("\t\tACK Number: ");
@@ -272,15 +271,62 @@ void parse_tcp(int ip_len){
    else{printf("No\n");}
 
    /* Window Size */
-   printf("\t\tWindow Size: %u\n\n", ntohs(header.window_size));
+   printf("\t\tWindow Size: %u\n", ntohs(header.window_size));
+   tcp_check(ip_len);
 }
 
-/*
-void tcp_check(struct tcp_header tcp){
-   struct ip_header ip;
 
+void tcp_check(int ip_len){
+   struct ip4_header ip;
+   struct tcp_header tcp;
+   struct tcp_pheader ptcp;
+   struct tcp_header *overlay;
+   uint8_t *buff;
+   unsigned short checksum;
+   int tcp_location = ETH_LEN + ip_len;
+   unsigned int header_length;
+   uint16_t tcp_len;
+
+   /* Load ip and tcp frames */
+   memcpy(&tcp, data + tcp_location, sizeof(struct tcp_header));
+   memcpy(&ip, data + ETH_LEN, sizeof(struct ip4_header));
+   /* Calculate TCP length 
+    * Convert to host order first 
+    */
+   header_length = (ip.version_hlen & 0x0F) * IP_HLEN_MULTI;
+   tcp_len = ntohs(ip.pdu_len) - header_length;
+    /* Copy info from ip header to ptcp header (network order) 
+    * Ip header data is already in network order 
+    */
+   ptcp.src_ip = ip.src_ip;
+   ptcp.dest_ip = ip.dest_ip;
+   ptcp.reserved = 0;
+   ptcp.protocol = ip.protocol;
+   ptcp.tcp_len = htons(tcp_len);
+   /* Create buffer to hold pheader and pdu 
+    * The variable "data" refers to the start of the packet
+    */
+   buff = malloc(sizeof(struct tcp_pheader) + tcp_len);
+   memcpy(buff, &ptcp, sizeof(struct tcp_pheader));
+   memcpy(buff + sizeof(struct tcp_pheader), data + tcp_location, tcp_len);
+   /* Set checksum field to 0 for calculation by overlaying a struct
+    * on the new data
+    */
+   overlay = (void *)buff + sizeof(struct tcp_pheader);
+   overlay->checksum = 0;
+
+   checksum = in_cksum((unsigned short*)(buff),
+                        sizeof(struct tcp_pheader) + tcp_len);
+   printf("\t\tChecksum: ");
+   /*Check if 0 */
+   if(checksum == tcp.checksum){
+      printf("Correct ");
+   }else{
+      printf("Incorrect ");
+   }
+   printf("(0x%x)\n", ntohs(checksum));
+   free(buff); 
 }
-*/
 
 
 /* Take a 6 byte array MAC (value) and convert it

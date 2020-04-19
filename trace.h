@@ -16,10 +16,11 @@
 #define MAC_STR_LEN 20
 #define IP_STR_LEN 20
 
-#define TCP_TAG 0x006
+#define TCP_TAG 0x0006
 #define ICMP_TAG 0x01
 #define IP4_TAG 0x0800
 #define VALID_IP_CHK 0
+#define VALID_TCP_CHK 0
 #define ARP_TAG 0x0806
 #define ARP_REQUEST 0x0001
 #define ARP_REPLY 0x0002
@@ -67,7 +68,7 @@ struct ip4_header{
 
 struct tcp_pheader{
    uint32_t src_ip;
-   uint32_t dst_ip;
+   uint32_t dest_ip;
    uint8_t reserved;
    uint8_t protocol;
    uint16_t tcp_len;
