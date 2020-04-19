@@ -19,6 +19,7 @@ void parse_icmp();
 void parse_tcp();
 void parse_tcp_flags(struct tcp_header *);
 void tcp_check(int);
+void parse_udp(int);
 void print_port(uint16_t);
 
 
@@ -73,7 +74,11 @@ void read_packets(){
             parse_icmp(len);
          }else if(payload_t == TCP_TAG){
             parse_tcp(len);               /* TCP */
+         }else if(payload_t == UDP_TAG){
+            parse_udp(len);
          }
+      }else{
+         return;
       }
 
       /* Increment and call */
@@ -151,17 +156,28 @@ uint16_t parse_ip4(int *len){
    
    /* Check payload protocol */
    printf("\t\tProtocol: ");
-   if(header.protocol == ICMP_TAG){
-      printf("ICMP\n");
-      retval = ICMP_TAG;
-   }else if(header.protocol == TCP_TAG){
-      printf("TCP\n");
-      retval = TCP_TAG;
-   }else{
-      printf("Unknown\n");
+
+   switch(header.protocol){
+      case ICMP_TAG :
+         printf("ICMP\n");
+         retval = ICMP_TAG; 
+         break;
+      case TCP_TAG :
+         printf("TCP\n");
+         retval = TCP_TAG;
+         break;
+      case UDP_TAG :
+         printf("UDP\n");
+         retval = UDP_TAG;
+         break;
+      default :
+         printf("Unknown\n");
+         retval = 0;
+         break;   
    }
    
    ip_check(&header, start_addr, header_length);
+   
    /* IP addresses */
    get_ip_str(header.src_ip, ip_buff);
    printf("\t\tSender IP: %s\n", ip_buff);
@@ -258,7 +274,6 @@ void parse_icmp(int ip_len){
 void parse_tcp(int ip_len){
    struct tcp_header header;
 
-
    memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
 
    printf("\tTCP Header\n");
@@ -330,7 +345,7 @@ void tcp_check(int ip_len){
    struct tcp_header *overlay;
    uint8_t *buff;
    unsigned short checksum;
-   int tcp_location = ETH_LEN + ip_len;
+   uintptr_t tcp_location = ETH_LEN + ip_len;
    unsigned int header_length;
    uint16_t tcp_len;
 
@@ -374,7 +389,9 @@ void tcp_check(int ip_len){
 
 void parse_udp(int ip_len){
    struct udp_header header;
+   uintptr_t udp_location = ETH_LEN + ip_len;
 
+   memcpy(&header, data + udp_location, sizeof(struct udp_header));
 }
 
 

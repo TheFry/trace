@@ -53,6 +53,9 @@
 #define RST_FLAG 0x0004
 #define FIN_FLAG 0x0001
 
+/* UDP info */
+#define UDP_TAG 0x11
+
 /* TCP and UDP ports */
 #define HTTP 80
 #define TELNET 23
@@ -124,12 +127,8 @@ struct tcp_header{
 struct udp_header{
    uint16_t src_port;
    uint16_t dest_port;
-   uint16_t len;
-   uint16_t checksum;
 } __attribute__ ((packed));
 /* Function declarations
 
 */
-
-
 
