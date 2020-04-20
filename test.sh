@@ -14,7 +14,13 @@ function run_test () {
       diff -B --ignore-all-space test_out $file.out > $file.diff_out
       ./trace $file > $file.user_out
    fi
+
+   rm diff_out
+   rm test_out
 }
+
+make clean
+make
 
 printf "Testing Trace\n\n"
 
