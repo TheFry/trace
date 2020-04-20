@@ -3,7 +3,7 @@
 
 function run_test () {
    ./trace $file > test_out
-   diff test_out $file.out > diff_out
+   diff -B --ignore-all-space test_out $file.out > diff_out
    
    if ! [ -s diff_out ] 
    then
@@ -11,8 +11,8 @@ function run_test () {
       cat diff_out
    else
       printf "Error on $file\n"
-      diff test_out $file.out > $file.diff_out
-      ./trace $file > $file.out
+      diff -B --ignore-all-space test_out $file.out > $file.diff_out
+      ./trace $file > $file.user_out
    fi
 }
 
