@@ -223,9 +223,9 @@ void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length
    if(print_check[0] != 0){
       printf("%x", print_check[0]);
    }
-   if(print_check[1] != 0){
-      printf("%02x", print_check[1]);
-   }
+
+   printf("%02x", print_check[1]);
+
    printf(")\n");
 }
 
