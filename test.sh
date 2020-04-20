@@ -25,11 +25,11 @@ make
 printf "Testing Trace\n\n"
 
 #arp
-file=given/arp/ArpTest.pcap
+file=given/ArpTest.pcap
 run_test
 
 #ip
-file=given/ip/IP_bad_checksum.pcap
+file=given/IP_bad_checksum.pcap
 run_test
 
 #ping
@@ -37,28 +37,28 @@ file=given/PingTest.pcap
 run_test
 
 #http
-file=given/http/Http.pcap
+file=given/Http.pcap
 run_test
 
 #tcp
-file=given/tcp/smallTCP.pcap
+file=given/smallTCP.pcap
 run_test
 
-file=given/tcp/TCP_bad_checksum.pcap
+file=given/TCP_bad_checksum.pcap
 run_test
 
 #udp
-file=given/udp/UDPfile.pcap
+file=given/UDPfile.pcap
 run_test
 
 #mix
-file=given/mix/largeMix.pcap
+file=given/largeMix.pcap
 run_test
 
-file=given/mix/largeMix2.pcap
+file=given/largeMix2.pcap
 run_test
 
-file=given/mix/mix_withIPoptions.pcap
+file=given/mix_withIPoptions.pcap
 run_test
 
 
