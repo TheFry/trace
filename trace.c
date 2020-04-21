@@ -205,10 +205,8 @@ uint16_t parse_ip_protocol(struct ip4_header *header){
 void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length){
    uint16_t checksum = 0;
    uint16_t temp = 0;
-   uint8_t print_check[2];
+   uint8_t *print_check;
 
-   temp = ntohs(header->hchecksum);
-   memcpy(print_check, &temp, sizeof(uint16_t));
    checksum = in_cksum((void *)start_addr, header_length);
    
    printf("\t\tChecksum: ");
@@ -218,6 +216,10 @@ void ip_check(struct ip4_header *header, uintptr_t start_addr, int header_length
       printf("Incorrect ");
    }
 
+   /* Convert checksum into two bytes */
+   temp = ntohs(header->hchecksum);
+   print_check = (uint8_t *)&temp;
+   
    /* Print if not 0 */
    printf("(0x");
    if(print_check[0] != 0){
@@ -285,7 +287,7 @@ void parse_icmp(int ip_len){
 /* Parse TCP header */
 void parse_tcp(int ip_len){
    struct tcp_header header;
-
+   uint8_t *printable;
    memcpy(&header, data + ETH_LEN + ip_len, sizeof(struct tcp_header));
 
    printf("\tTCP Header\n");
@@ -299,7 +301,19 @@ void parse_tcp(int ip_len){
 
    /* Window Size */
    printf("\t\tWindow Size: %u\n", ntohs(header.window_size));
+   
+   /* Check checksum */
    tcp_check(ip_len);
+
+   /* Convert checksum to 2 bytes */
+   printable = (uint8_t *) &header.checksum;
+   
+   /* Print it */
+   printf("(0x");
+   if(printable[0] != 0){
+      printf("%x", printable[0]);
+   }
+   printf("%02x)\n", printable[1]);
 }
 
 
@@ -384,14 +398,12 @@ void tcp_check(int ip_len){
 
    checksum = in_cksum((unsigned short*)(buff),
                         sizeof(struct tcp_pheader) + tcp_len);
-   
+
    printf("\t\tChecksum: ");
    if(checksum == tcp.checksum){
       printf("Correct ");
-      printf("(0x%x)\n", ntohs(checksum));
    }else{
       printf("Incorrect ");
-      printf("(0x%x)\n", ntohs(tcp.checksum));
    }
    free(buff); 
 }
