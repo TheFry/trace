@@ -7,23 +7,6 @@ static struct pcap_pkthdr *hdr;
 static const u_char *data;
 static uint32_t packet_len;
 
-void read_packets();
-uint16_t parse_ether();
-void parse_arp();
-void get_mac_str(uint8_t *, char *);
-void get_ip_str(uint32_t, char *);
-uint16_t parse_ip4(int *);
-uint16_t parse_ip_protocol(struct ip4_header *);
-void ip_check(struct ip4_header *, uintptr_t, int);
-
-void parse_icmp();
-void parse_tcp();
-void parse_tcp_flags(struct tcp_header *);
-void tcp_check(int);
-void parse_udp(int);
-void print_port(uint16_t);
-
-
 /* Parse args, open file, launch program */
 int main(int argc, char **argv){
    char errbuf[PCAP_ERRBUF_SIZE];

@@ -2,14 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <pcap/pcap.h>
-/* For net address manipulation */
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/ether.h>
 #include <endian.h>
 
-
+/* Size of Mac address for printing */
 #define MAC_BYTES 6
 
 /*Multiplyer for calculating IP length */
@@ -128,7 +127,27 @@ struct udp_header{
    uint16_t src_port;
    uint16_t dest_port;
 } __attribute__ ((packed));
-/* Function declarations
 
-*/
 
+/* Function declarations */
+void read_packets();
+
+uint16_t parse_ether();
+void parse_arp();
+
+uint16_t parse_ip4(int *);
+uint16_t parse_ip_protocol(struct ip4_header *);
+void ip_check(struct ip4_header *, uintptr_t, int);
+
+void parse_icmp();
+
+void parse_tcp();
+void parse_tcp_flags(struct tcp_header *);
+void tcp_check(int);
+
+void parse_udp(int);
+
+/* Helper functions */
+void get_mac_str(uint8_t *, char *);
+void get_ip_str(uint32_t, char *);
+void print_port(uint16_t);
